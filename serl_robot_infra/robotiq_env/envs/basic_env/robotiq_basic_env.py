@@ -7,17 +7,19 @@ from robotiq_env.envs.basic_env.config import RobotiqCornerConfig
 
 # used for float value comparisons (pressure of vacuum-gripper)
 def is_close(value, target):
-    return abs(value - target) < 1e-4
+    return abs(value - target) < 1e-3
 
 
 class RobotiqBasicEnv(RobotiqEnv):
     def __init__(self, **kwargs):
         super().__init__(**kwargs, config=RobotiqCornerConfig)
+        self.last_action = np.zeros(self.action_space.shape, dtype=np.float32)
 
     def compute_reward(self, obs, action) -> float:
         # huge action gives negative reward (like in mountain car)
         action_cost = 0.1 * np.sum(np.power(action, 2))
         step_cost = 0.01
+        self.last_action[:] = action
 
         gripper_state = obs["state"]['gripper_state']
         suck_cost = 0.1 * float(is_close(gripper_state[0], 0.99))
@@ -27,12 +29,19 @@ class RobotiqBasicEnv(RobotiqEnv):
         # xy_cost = 5 * np.sum(np.power(pose[:2] - box_xy, 2))        # TODO can be ignored
 
         # print(f"action_cost: {action_cost}, xy_cost: {xy_cost}")
+        
+        distance_cost = np.linalg.norm(pose[:3] - self.target_position)
+        print(f"distance_cost: {distance_cost}")
+        
         if self.reached_goal_state(obs):
-            return 10. - action_cost - step_cost - suck_cost
+            return 10. - action_cost - step_cost - distance_cost
+            # return 10. - action_cost - step_cost - suck_cost
         else:
-            return 0.0 - action_cost - step_cost - suck_cost
+            return 0.0 - action_cost - step_cost - distance_cost
 
     def reached_goal_state(self, obs) -> bool:
         # obs[0] == gripper pressure, obs[4] == force in Z-axis
         state = obs["state"]
-        return 0.1 < state['gripper_state'][0] < 0.85 and state['tcp_pose'][2] > 0.15  # new min height with box
+        self.last_action[:] = 0.
+        return is_close(state['tcp_pose'][2], self.target_position[2])   # new min height with box
+        # return 0.1 < state['gripper_state'][0] < 0.85 and state['tcp_pose'][2] > 0.15  # new min height with box

@@ -409,7 +409,7 @@ class RobotiqImpedanceController(threading.Thread):
 
             # move to real home
             pi = 3.1415
-            reset_Q = [pi / 2., -pi / 2., pi / 2., -pi / 2., -pi / 2., 0.]
+            reset_Q = [3.13862559, -1.46608, 1.033933, -1.131497, -1.5641641, 0.0301942]
             self.robotiq_control.moveJ(reset_Q, speed=1., acceleration=0.8)
 
             # terminate

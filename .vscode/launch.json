@@ -1,0 +1,19 @@
+{
+    "configurations": [
+        {
+            "type": "debugpy",
+            "request": "launch",
+            "name": "Launch SERL App",
+            "program": "${workspaceFolder}/examples/robotiq_bc/record_demo.py",
+            "args": [],
+            "console": "integratedTerminal"
+        }
+    ],
+    "inputs": [
+        {
+            "type": "promptString",
+            "id": "programPath",
+            "description": "Enter the path to the Python file to launch"
+        }
+    ]
+}

@@ -42,12 +42,12 @@ flags.DEFINE_integer("seed", 42, "Random seed.")
 flags.DEFINE_bool("save_model", True, "Whether to save model.")
 flags.DEFINE_integer("batch_size", 256, "Batch size.")
 
-flags.DEFINE_integer("max_steps", 100000, "Maximum number of training steps.")
-flags.DEFINE_integer("replay_buffer_capacity", 100000, "Replay buffer capacity.")
+flags.DEFINE_integer("max_steps", 20000, "Maximum number of training steps.")
+flags.DEFINE_integer("replay_buffer_capacity", 20000, "Replay buffer capacity.")
 
 flags.DEFINE_multi_string("demo_paths", None, "paths to demos")
-flags.DEFINE_string("checkpoint_path", None, "Path to save checkpoints.")
-flags.DEFINE_integer("checkpoint_period", 10000, "Period to save checkpoints.")
+flags.DEFINE_string("checkpoint_path", "/home/andrea/Code/Thesis/voxel-serl/examples/robotiq_bc/checkpoints", "Path to save checkpoints.")
+flags.DEFINE_integer("checkpoint_period", 2000, "Period to save checkpoints.")
 
 flags.DEFINE_integer(
     "eval_checkpoint_step", 0, "evaluate the policy from ckpt at this step"

@@ -91,7 +91,7 @@ class DefaultEnvConfig:
     ABS_POSE_RANGE_LIMITS = np.zeros((2,))
     ACTION_SCALE = np.zeros((3,), dtype=np.float32)
 
-    ROBOT_IP: str = "localhost"
+    ROBOT_IP: str = "192.168.1.33"
     CONTROLLER_HZ: int = 0
     GRIPPER_TIMEOUT: int = 0  # in milliseconds
     ERROR_DELTA: float = 0.
@@ -118,13 +118,14 @@ class RobotiqEnv(gym.Env):
             max_episode_length: int = 100,
             save_video: bool = False,
             realtime_plot: bool = False,
-            camera_mode: str = "rgb",  # one of (rgb, grey, depth, both, pointcloud, none)
+            camera_mode: str = "none",  # one of (rgb, grey, depth, both, pointcloud, none)
     ):
         self.max_episode_length = max_episode_length
         self.curr_path_length = 0
         self.action_scale = config.ACTION_SCALE
 
         self.config = config
+        self.target_position = np.array([0.5, 0.13, 0.55])
 
         self.resetQ = config.RESET_Q
         self.curr_reset_pose = np.zeros((7,), dtype=np.float32)
