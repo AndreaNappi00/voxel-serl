@@ -9,7 +9,7 @@ import gymnasium as gym
 from pprint import pprint
 from pynput import keyboard
 
-from robotiq_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
+from robotiq_env.envs.wrappers import KinestheticTeaching, SpacemouseIntervention, Quat2MrpWrapper
 from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
 from serl_launcher.wrappers.chunking import ChunkingWrapper
 
@@ -33,7 +33,8 @@ def on_esc(key):
 
 if __name__ == "__main__":
     env = gym.make("robotiq_basic_env")
-    env = SpacemouseIntervention(env)
+    # env = SpacemouseIntervention(env)
+    env = KinestheticTeaching(env)
     env = RelativeFrame(env)
     env = Quat2MrpWrapper(env)
     env = SerlObsWrapperNoImages(env)
@@ -71,6 +72,7 @@ if __name__ == "__main__":
 
             next_obs, rew, done, truncated, info = env.step(action=np.zeros((7,)))
             actions = info["intervene_action"]
+            print(actions)
 
             transition = copy.deepcopy(
                 dict(
