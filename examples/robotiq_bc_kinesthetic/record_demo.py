@@ -33,7 +33,6 @@ def on_esc(key):
 
 if __name__ == "__main__":
     env = gym.make("robotiq_basic_env")
-    # env = SpacemouseIntervention(env)
     env = KinestheticTeaching(env)
     env = RelativeFrame(env)
     env = Quat2MrpWrapper(env)
@@ -72,7 +71,6 @@ if __name__ == "__main__":
 
             next_obs, rew, done, truncated, info = env.step(action=np.zeros((7,)))
             actions = info["intervene_action"]
-            print(actions)
 
             transition = copy.deepcopy(
                 dict(
@@ -96,7 +94,7 @@ if __name__ == "__main__":
                     f"{rew}\tGot {success_count} successes of {total_count} trials. {success_needed} successes needed."
                 )
                 pbar.update(int(rew > 0.99))
-                obs, _ = env.reset()
+                obs, _ = env.reset()            
 
         with open(file_path, "wb") as f:
             pkl.dump(transitions, f)

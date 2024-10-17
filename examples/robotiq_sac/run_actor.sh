@@ -12,4 +12,4 @@ python sac_policy_robotiq.py "$@" \
     --batch_size 2048 \
     --eval_period 1000 \
     --reward_scale 1 \
-#    --debug
+    # --debug

@@ -3,11 +3,37 @@
         {
             "type": "debugpy",
             "request": "launch",
-            "name": "Launch SERL App",
-            "program": "${workspaceFolder}/examples/robotiq_bc/record_demo.py",
+            "name": "Launch Kinesthetic Teaching",
+            "program": "${workspaceFolder}/examples/robotiq_bc_kinesthetic/record_demo.py",
             "args": [],
             "console": "integratedTerminal"
-        }
+        },
+        {
+            "type": "debugpy",
+            "request": "launch",
+            "name": "Launch BC Spacemouse",
+            "program": "${workspaceFolder}/examples/robotiq_bc_spacemouse/record_demo.py",
+            "args": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "debugpy",
+            "request": "launch",
+            "name": "Launch Test Demo Kinesthetic",
+            "program": "${workspaceFolder}/examples/robotiq_bc_kinesthetic/test_demo.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/examples/robotiq_bc_kinesthetic"
+        },
+        {
+            "type": "debugpy",
+            "request": "launch",
+            "name": "Launch Test Demo Spacemouse",
+            "program": "${workspaceFolder}/examples/robotiq_bc_spacemouse/test_demo.py",
+            "args": [],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/examples/robotiq_bc_spacemouse"
+        },
     ],
     "inputs": [
         {

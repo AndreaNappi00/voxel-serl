@@ -79,6 +79,8 @@ class RobotiqImpedanceController(threading.Thread):
         self.horizon = [0, 500]
         self.err = 0
         self.noerr = 0
+        
+        self.freemove = False
 
         # log to file (reset every new run)
         with open("/tmp/console2.txt", 'w') as f:
@@ -374,13 +376,19 @@ class RobotiqImpedanceController(threading.Thread):
 
                 # send command to robot
                 t_start = self.robotiq_control.initPeriod()
-                fm_successful = self.robotiq_control.forceMode(
-                    self.fm_task_frame,
-                    self.fm_selection_vector,
-                    force,
-                    2,
-                    self.fm_limits
-                )
+                if self.freemove:
+                    fm_successful = self.robotiq_control.freedriveMode(
+                                    self.fm_selection_vector,
+                                    self.fm_task_frame
+                    )
+                else:
+                    fm_successful = self.robotiq_control.forceMode(
+                        self.fm_task_frame,
+                        self.fm_selection_vector,
+                        force,
+                        2,
+                        self.fm_limits
+                    )
                 if not fm_successful:  # truncate if the robot ends up in a singularity
                     await self.restart_robotiq_interface()
                     await self._go_to_reset_pose()
@@ -400,7 +408,10 @@ class RobotiqImpedanceController(threading.Thread):
             if self.verbose:
                 print(f"[RTDEPositionalController] >dt: {self.err}     <dt (good): {self.noerr}")
             # mandatory cleanup
-            self.robotiq_control.forceModeStop()
+            if self.freemove:
+                self.robotiq_control.endFreedriveMode()
+            else:
+                self.robotiq_control.forceModeStop()
 
             # release gripper
             if self.robotiq_gripper:

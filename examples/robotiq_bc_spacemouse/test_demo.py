@@ -7,6 +7,8 @@ from pynput import keyboard
 from robotiq_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
 from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
 
+from robotiq_env.envs.relative_env import RelativeFrame
+
 exit_program = threading.Event()
 
 """
@@ -29,7 +31,7 @@ def on_esc(key):
 if __name__ == "__main__":
     env = gym.make("robotiq_basic_env")
     env = SpacemouseIntervention(env)
-    # env = RelativeFrame(env)
+    env = RelativeFrame(env)
     env = Quat2MrpWrapper(env)
     env = SerlObsWrapperNoImages(env)
     # env = ChunkingWrapper(env, obs_horizon=1, act_exec_horizon=None)
@@ -44,7 +46,7 @@ if __name__ == "__main__":
     listener_2 = keyboard.Listener(on_press=on_esc, daemon=True)
     listener_2.start()
 
-    file_path = "robotiq_test_20_demos_mar26_rew1.pkl.old"
+    file_path = "robotiq_test_20_demos_2024-10-10_12-11-30.pkl"
 
     with open(file_path, "rb") as f:
         transitions = pkl.load(f)

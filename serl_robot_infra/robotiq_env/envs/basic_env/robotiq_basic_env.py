@@ -31,7 +31,7 @@ class RobotiqBasicEnv(RobotiqEnv):
         # print(f"action_cost: {action_cost}, xy_cost: {xy_cost}")
         
         distance_cost = np.linalg.norm(pose[:3] - self.target_position)
-        print(f"distance_cost: {distance_cost}")
+        # print(f"distance_cost: {distance_cost}")
         
         if self.reached_goal_state(obs):
             return 10. - action_cost - step_cost - distance_cost

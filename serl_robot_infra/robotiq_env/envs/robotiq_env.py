@@ -392,6 +392,8 @@ class RobotiqEnv(gym.Env):
         if self.save_video:
             self.save_video_recording()
 
+        self.controller.robotiq_control.endFreedriveMode()
+        
         shift = self.go_to_rest()
         self.curr_path_length = 0
 
