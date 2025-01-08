@@ -4,6 +4,7 @@ import threading
 import asyncio
 import numpy as np
 import matplotlib.pyplot as plt
+from enum import Enum
 from scipy.spatial.transform import Rotation as R
 from rtde_control import RTDEControlInterface
 from rtde_receive import RTDEReceiveInterface
@@ -22,6 +23,10 @@ def pos_difference(quat_pose_1: np.ndarray, quat_pose_2: np.ndarray):
     r_diff = (R.from_quat(quat_pose_1[3:]) * R.from_quat(quat_pose_2[3:]).inv()).magnitude()
     return p_diff + r_diff
 
+class DemoMode(Enum):
+    SPACE_MOUSE = 0
+    KINESTHETIC_TEACHING = 1
+    EXPERT_TEACHING = 2
 
 class RobotiqImpedanceController(threading.Thread):
     def __init__(
@@ -80,7 +85,7 @@ class RobotiqImpedanceController(threading.Thread):
         self.err = 0
         self.noerr = 0
         
-        self.freemove = False
+        self.teaching_mode : DemoMode = DemoMode.SPACE_MOUSE
 
         # log to file (reset every new run)
         with open("/tmp/console2.txt", 'w') as f:
@@ -376,19 +381,21 @@ class RobotiqImpedanceController(threading.Thread):
 
                 # send command to robot
                 t_start = self.robotiq_control.initPeriod()
-                if self.freemove:
-                    fm_successful = self.robotiq_control.freedriveMode(
-                                    self.fm_selection_vector,
-                                    self.fm_task_frame
-                    )
-                else:
-                    fm_successful = self.robotiq_control.forceMode(
-                        self.fm_task_frame,
-                        self.fm_selection_vector,
-                        force,
-                        2,
-                        self.fm_limits
-                    )
+                match self.teaching_mode:
+                    case DemoMode.KINESTHETIC_TEACHING:
+                        fm_successful = self.robotiq_control.freedriveMode(
+                            self.fm_selection_vector,
+                            self.fm_task_frame
+                        )
+                    case _:
+                        fm_successful = self.robotiq_control.forceMode(
+                            self.fm_task_frame,
+                            self.fm_selection_vector,
+                            force,
+                            2,
+                            self.fm_limits
+                        )
+                    
                 if not fm_successful:  # truncate if the robot ends up in a singularity
                     await self.restart_robotiq_interface()
                     await self._go_to_reset_pose()
@@ -408,10 +415,11 @@ class RobotiqImpedanceController(threading.Thread):
             if self.verbose:
                 print(f"[RTDEPositionalController] >dt: {self.err}     <dt (good): {self.noerr}")
             # mandatory cleanup
-            if self.freemove:
-                self.robotiq_control.endFreedriveMode()
-            else:
-                self.robotiq_control.forceModeStop()
+            match self.teaching_mode:
+                case DemoMode.KINESTHETIC_TEACHING:
+                    self.robotiq_control.endFreedriveMode()
+                case _:
+                    self.robotiq_control.forceModeStop()
 
             # release gripper
             if self.robotiq_gripper:
@@ -419,7 +427,7 @@ class RobotiqImpedanceController(threading.Thread):
                 time.sleep(0.05)
 
             # move to real home
-            pi = 3.1415
+            # pi = 3.1415
             reset_Q = [3.13862559, -1.46608, 1.033933, -1.131497, -1.5641641, 0.0301942]
             self.robotiq_control.moveJ(reset_Q, speed=1., acceleration=0.8)
 

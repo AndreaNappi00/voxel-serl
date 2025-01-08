@@ -125,7 +125,8 @@ class RobotiqEnv(gym.Env):
         self.action_scale = config.ACTION_SCALE
 
         self.config = config
-        self.target_position = np.array([0.5, 0.13, 0.55])
+        # self.target_pose = np.array([0.5, 0.13, 0.55, 0, 0, 0])
+        # self.target_pose = np.array([0.5, 0.13, 0.466, 0, 0, 0])
 
         self.resetQ = config.RESET_Q
         self.curr_reset_pose = np.zeros((7,), dtype=np.float32)

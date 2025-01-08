@@ -3,6 +3,14 @@
         {
             "type": "debugpy",
             "request": "launch",
+            "name": "Launch BC Spacemouse",
+            "program": "${workspaceFolder}/examples/robotiq_bc_spacemouse/record_demo.py",
+            "args": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "debugpy",
+            "request": "launch",
             "name": "Launch Kinesthetic Teaching",
             "program": "${workspaceFolder}/examples/robotiq_bc_kinesthetic/record_demo.py",
             "args": [],
@@ -11,8 +19,8 @@
         {
             "type": "debugpy",
             "request": "launch",
-            "name": "Launch BC Spacemouse",
-            "program": "${workspaceFolder}/examples/robotiq_bc_spacemouse/record_demo.py",
+            "name": "Launch BC Expert Teaching",
+            "program": "${workspaceFolder}/examples/robotiq_bc_expert_teaching/record_demo.py",
             "args": [],
             "console": "integratedTerminal"
         },
