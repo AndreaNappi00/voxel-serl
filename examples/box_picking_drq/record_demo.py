@@ -1,24 +1,20 @@
-import os
-import datetime
-import threading
+import gymnasium as gym
+from tqdm import tqdm
 import numpy as np
 import copy
 import pickle as pkl
-from tqdm import tqdm
-import gymnasium as gym
-from pprint import pprint
+import datetime
+import os
+import threading
 from pynput import keyboard
 
-<<<<<<<< HEAD:examples/robotiq_bc_spacemouse/record_demo.py
-from robotiq_env.envs.wrappers import KinestheticTeaching, SpacemouseIntervention, Quat2MrpWrapper
-========
-from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
->>>>>>>> upstream/develop:examples/box_picking_bc/record_demo.py
-from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
+from ur_env.envs.relative_env import RelativeFrame
+from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper, ObservationRotationWrapper
+
+from serl_launcher.wrappers.serl_obs_wrappers import SERLObsWrapper, ScaleObservationWrapper
 from serl_launcher.wrappers.chunking import ChunkingWrapper
 
-from gymnasium.wrappers import TransformReward
-from ur_env.envs.relative_env import RelativeFrame
+import ur_env
 
 exit_program = threading.Event()
 
@@ -36,13 +32,17 @@ def on_esc(key):
 
 
 if __name__ == "__main__":
-    env = gym.make("box_picking_basic_env")
+    env = gym.make("box_picking_camera_env",
+                   camera_mode="pointcloud",
+                   max_episode_length=100,
+                   )
     env = SpacemouseIntervention(env)
     env = RelativeFrame(env)
     env = Quat2MrpWrapper(env)
-    env = SerlObsWrapperNoImages(env)
-    # env = TransformReward(env, lambda r: 10. * r)
-    # env = ChunkingWrapper(env, obs_horizon=1, act_exec_horizon=None)
+    env = ScaleObservationWrapper(env)
+    # env = ObservationRotationWrapper(env)       # if it should be enabled
+    env = SERLObsWrapper(env)
+    env = ChunkingWrapper(env, obs_horizon=1, act_exec_horizon=None)
 
     obs, _ = env.reset()
 
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     pbar = tqdm(total=success_needed)
 
     info_dict = {'state': env.unwrapped.curr_pos, 'gripper_state': env.unwrapped.gripper_state,
-                 'force': env.unwrapped.curr_force}
+                 'force': env.unwrapped.curr_force, 'reset_pose': env.unwrapped.curr_reset_pose}
     listener_1 = keyboard.Listener(daemon=True, on_press=lambda event: on_space(event, info_dict=info_dict))
     listener_1.start()
 
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     listener_2.start()
 
     uuid = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_name = f"ur5_test_{success_needed}_demos_{uuid}.pkl"
+    file_name = f"box_picking_{success_needed}_demos_{uuid}.pkl"
     file_dir = os.path.dirname(os.path.realpath(__file__))  # same dir as this script
     file_path = os.path.join(file_dir, file_name)
 
@@ -69,6 +69,7 @@ if __name__ == "__main__":
         raise PermissionError(f"No permission to write to {file_dir}")
 
     try:
+        running_reward = 0.
         while success_count < success_needed:
             if exit_program.is_set():
                 raise KeyboardInterrupt  # stop program, but clean up before
@@ -87,11 +88,11 @@ if __name__ == "__main__":
                 )
             )
             transitions.append(transition)
-            # pprint(transition)
 
             obs = next_obs
+            running_reward += rew
 
-            if done:
+            if done or truncated:
                 success_count += int(rew > 0.99)
                 total_count += 1
                 print(
@@ -99,6 +100,8 @@ if __name__ == "__main__":
                 )
                 pbar.update(int(rew > 0.99))
                 obs, _ = env.reset()
+                print("Reward total:", running_reward)
+                running_reward = 0.
 
         with open(file_path, "wb") as f:
             pkl.dump(transitions, f)

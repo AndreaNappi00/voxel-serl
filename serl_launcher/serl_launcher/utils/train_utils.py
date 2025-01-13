@@ -142,16 +142,18 @@ def load_pretrained_VoxNet_params(agent, image_keys=("pointcloud",)):
             f"encoder_{image_key}"
         ]
         to_replace = {
-            "conv_5x5x5": "voxnet/conv1/conv3d/kernel:0",
-            "conv_3x3x3": "voxnet/conv2/conv3d/kernel:0",
-            "conv_2x2x2": "voxnet/conv3/conv3d/kernel:0"
+            "conv_5x5x5": "voxnet/conv1/conv3d/",
+            "conv_3x3x3": "voxnet/conv2/conv3d/",
+            "conv_2x2x2": "voxnet/conv3/conv3d/"
         }
         replaced = []
         for key, weights in to_replace.items():
             if key in new_encoder_params:
                 shape = new_encoder_params[key]["kernel"].shape
                 new_encoder_params[key]["kernel"] = new_encoder_params[key]["kernel"].at[:].set(
-                    ckpt[weights][..., :shape[-1]])
+                    ckpt[weights + "kernel:0"][..., :shape[-1]])
+                new_encoder_params[key]["bias"] = new_encoder_params[key]["bias"].at[:].set(
+                    ckpt[weights + "bias:0"][:shape[-1]])
                 replaced.append(f"{key}:{shape}")
 
         print(f"replaced {replaced} in {image_key}")
@@ -187,7 +189,11 @@ def print_agent_params(agent, image_keys=("image",)):
         pretrained_encoder_count = get_size(actor["encoder"][f"encoder_{image_keys[0]}"]["pretrained_encoder"])
     except Exception as e:
         pretrained_encoder_count = 0
-    encoder_count = get_size(actor["encoder"])
+
+    try:
+        encoder_count = get_size(actor["encoder"])
+    except Exception as e:
+        encoder_count = 0
 
     actor_count = get_size(actor)
     critic_count = get_size(critic)
