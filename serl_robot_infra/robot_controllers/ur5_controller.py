@@ -4,11 +4,7 @@ import threading
 import asyncio
 import numpy as np
 import matplotlib.pyplot as plt
-<<<<<<< HEAD:serl_robot_infra/robot_controllers/robotiq_controller.py
-from enum import Enum
-=======
 from responses import target
->>>>>>> upstream/develop:serl_robot_infra/robot_controllers/ur5_controller.py
 from scipy.spatial.transform import Rotation as R
 from rtde_control import RTDEControlInterface
 from rtde_receive import RTDEReceiveInterface
@@ -27,10 +23,6 @@ def pos_difference(quat_pose_1: np.ndarray, quat_pose_2: np.ndarray):
     r_diff = (R.from_quat(quat_pose_1[3:]) * R.from_quat(quat_pose_2[3:]).inv()).magnitude()
     return p_diff + r_diff
 
-class DemoMode(Enum):
-    SPACE_MOUSE = 0
-    KINESTHETIC_TEACHING = 1
-    EXPERT_TEACHING = 2
 
 class UrImpedanceController(threading.Thread):
     def __init__(
@@ -89,8 +81,6 @@ class UrImpedanceController(threading.Thread):
         self.horizon = [0, 500]
         self.err = 0
         self.noerr = 0
-        
-        self.teaching_mode : DemoMode = DemoMode.SPACE_MOUSE
 
         # log to file (reset every new run)
         with open("/tmp/console2.txt", 'w') as f:
@@ -394,24 +384,6 @@ class UrImpedanceController(threading.Thread):
                 self.print(f" p:{self.curr_pos}   f:{self.curr_force_lowpass}   gr:{self.gripper_state}")  # log to file
 
                 # send command to robot
-<<<<<<< HEAD:serl_robot_infra/robot_controllers/robotiq_controller.py
-                t_start = self.robotiq_control.initPeriod()
-                match self.teaching_mode:
-                    case DemoMode.KINESTHETIC_TEACHING:
-                        fm_successful = self.robotiq_control.freedriveMode(
-                            self.fm_selection_vector,
-                            self.fm_task_frame
-                        )
-                    case _:
-                        fm_successful = self.robotiq_control.forceMode(
-                            self.fm_task_frame,
-                            self.fm_selection_vector,
-                            force,
-                            2,
-                            self.fm_limits
-                        )
-                    
-=======
                 t_start = self.ur_control.initPeriod()
                 fm_successful = self.ur_control.forceMode(
                     self.fm_task_frame,
@@ -420,7 +392,6 @@ class UrImpedanceController(threading.Thread):
                     2,
                     self.fm_limits
                 )
->>>>>>> upstream/develop:serl_robot_infra/robot_controllers/ur5_controller.py
                 if not fm_successful:  # truncate if the robot ends up in a singularity
                     await self.restart_ur_interface()
                     await self._go_to_reset_pose()
@@ -440,15 +411,7 @@ class UrImpedanceController(threading.Thread):
             if self.verbose:
                 print(f"[RTDEPositionalController] >dt: {self.err}     <dt (good): {self.noerr}")
             # mandatory cleanup
-<<<<<<< HEAD:serl_robot_infra/robot_controllers/robotiq_controller.py
-            match self.teaching_mode:
-                case DemoMode.KINESTHETIC_TEACHING:
-                    self.robotiq_control.endFreedriveMode()
-                case _:
-                    self.robotiq_control.forceModeStop()
-=======
             self.ur_control.forceModeStop()
->>>>>>> upstream/develop:serl_robot_infra/robot_controllers/ur5_controller.py
 
             # release gripper
             if self.robotiq_gripper:
@@ -456,15 +419,9 @@ class UrImpedanceController(threading.Thread):
                 time.sleep(0.05)
 
             # move to real home
-<<<<<<< HEAD:serl_robot_infra/robot_controllers/robotiq_controller.py
-            # pi = 3.1415
-            reset_Q = [3.13862559, -1.46608, 1.033933, -1.131497, -1.5641641, 0.0301942]
-            self.robotiq_control.moveJ(reset_Q, speed=1., acceleration=0.8)
-=======
             pi = 3.1415
-            reset_Q = [0, -pi / 2., pi / 2., -pi / 2., -pi / 2., 0.]
+            reset_Q = np.deg2rad([-36.26, -82.24, 128.58, -136.35, -89.82, -46.5])
             self.ur_control.moveJ(reset_Q, speed=1., acceleration=0.8)
->>>>>>> upstream/develop:serl_robot_infra/robot_controllers/ur5_controller.py
 
             # terminate
             self.ur_control.disconnect()

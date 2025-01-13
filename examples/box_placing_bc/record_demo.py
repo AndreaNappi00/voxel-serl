@@ -9,7 +9,7 @@ import gymnasium as gym
 from pprint import pprint
 from pynput import keyboard
 
-from ur_env.envs.wrappers import KinestheticTeaching, SpacemouseIntervention, Quat2MrpWrapper, DemonstrationWrapper
+from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
 from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
 from serl_launcher.wrappers.chunking import ChunkingWrapper
 
@@ -32,8 +32,8 @@ def on_esc(key):
 
 
 if __name__ == "__main__":
-    env = gym.make("robotiq_basic_env")
-    env = DemonstrationWrapper(env)
+    env = gym.make("box_placing_corner_env")
+    env = SpacemouseIntervention(env)
     env = RelativeFrame(env)
     env = Quat2MrpWrapper(env)
     env = SerlObsWrapperNoImages(env)
@@ -57,9 +57,9 @@ if __name__ == "__main__":
     listener_2.start()
 
     uuid = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    file_name = f"robotiq_test_{success_needed}_demos_{uuid}.pkl"
+    file_name = f"ur5_test_{success_needed}_demos_{uuid}.pkl"
     file_dir = os.path.dirname(os.path.realpath(__file__))  # same dir as this script
-    file_path = os.path.join(file_dir, file_name)
+    file_path = os.path.join(file_dir, "demos/", file_name)
 
     if not os.access(file_dir, os.W_OK):
         raise PermissionError(f"No permission to write to {file_dir}")
@@ -94,7 +94,7 @@ if __name__ == "__main__":
                     f"{rew}\tGot {success_count} successes of {total_count} trials. {success_needed} successes needed."
                 )
                 pbar.update(int(rew > 0.99))
-                obs, _ = env.reset()            
+                obs, _ = env.reset()
 
         with open(file_path, "wb") as f:
             pkl.dump(transitions, f)

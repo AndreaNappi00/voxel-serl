@@ -16,6 +16,7 @@ setup(
         "rospkg",
         "scipy",
         "requests",
+        "responses",
         "flask",
         "defusedxml",
     ],

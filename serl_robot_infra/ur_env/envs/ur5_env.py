@@ -20,6 +20,7 @@ from ur_env.camera.video_capture import VideoCapture
 from ur_env.camera.rs_capture import RSCapture
 
 from ur_env.camera.utils import PointCloudFusion, CalibrationTread
+from ur_env.utils.pose_estimation import BoxPoseEstimation
 
 from robot_controllers.ur5_controller import UrImpedanceController
 
@@ -90,7 +91,7 @@ class DefaultEnvConfig:
     ABS_POSE_RANGE_LIMITS = np.zeros((2,))
     ACTION_SCALE = np.zeros((3,), dtype=np.float32)
 
-    ROBOT_IP: str = "192.168.1.33"
+    ROBOT_IP: str = "localhost"
     CONTROLLER_HZ: int = 0
     GRIPPER_TIMEOUT: int = 0  # in milliseconds
     ERROR_DELTA: float = 0.
@@ -116,20 +117,13 @@ class UR5Env(gym.Env):
             config=DefaultEnvConfig,
             max_episode_length: int = 100,
             save_video: bool = False,
-<<<<<<< HEAD:serl_robot_infra/robotiq_env/envs/robotiq_env.py
-            realtime_plot: bool = False,
-            camera_mode: str = "none",  # one of (rgb, grey, depth, both, pointcloud, none)
-=======
-            camera_mode: str = "rgb",  # one of (rgb, grey, depth, both(rgb depth), pointcloud, none)
->>>>>>> upstream/develop:serl_robot_infra/ur_env/envs/ur5_env.py
+            camera_mode: str = "none",  # one of (rgb, grey, depth, both(rgb depth), pointcloud, none)
     ):
         self.max_episode_length = max_episode_length
         self.curr_path_length = 0
         self.action_scale = config.ACTION_SCALE
 
         self.config = config
-        # self.target_pose = np.array([0.5, 0.13, 0.55, 0, 0, 0])
-        # self.target_pose = np.array([0.5, 0.13, 0.466, 0, 0, 0])
 
         self.resetQ = config.RESET_Q
         self.curr_reset_pose = np.zeros((7,), dtype=np.float32)
@@ -140,6 +134,17 @@ class UR5Env(gym.Env):
         self.curr_Qd = np.zeros((6,), dtype=np.float32)
         self.curr_force = np.zeros((3,), dtype=np.float32)
         self.curr_torque = np.zeros((3,), dtype=np.float32)
+        
+        self.pose_estimation_ip = config.POSE_ESTIMATION_IP
+        self.pose_est = config.POSE_ESTIMATION
+        
+        # boxes
+        self.box_pose = BoxPoseEstimation(self.pose_estimation_ip) if config.POSE_ESTIMATION else None
+        self.goal_position = np.zeros((3,), dtype=np.float32)
+        self.box_position = np.zeros((3,), dtype=np.float32)
+        self.box_orientation = np.zeros((3,), dtype=np.float32)
+        self.init_box_orientation = np.zeros((3,), dtype=np.float32)
+        self._get_goal_position()
 
         self.gripper_state = np.zeros((2,), dtype=np.float32)
         self.random_reset = config.RANDOM_RESET
@@ -454,8 +459,6 @@ class UR5Env(gym.Env):
         if self.save_video:
             self.save_video_recording()
 
-        self.controller.robotiq_control.endFreedriveMode()
-        
         shift = self.go_to_rest()
         self.curr_path_length = 0
 
@@ -641,6 +644,20 @@ class UR5Env(gym.Env):
 
     def _send_taskspace_command(self, target_pos):
         self.controller.set_reset_pose(target_pos)
+        
+    def _update_box_pos_estimate(self):
+        self.box_position = self.box_pose.get_box_position()
+        self.box_position = self.WF_rot @ self.box_position
+
+    def _update_box_orientation_estimate(self):
+        self.box_orientation = self.box_pose.get_box_orientation()
+        self.box_orientation = self.WF_rot @ self.box_orientation
+        
+    def _get_goal_position(self):
+        """
+        Make sure the goal position is the correct one before computing the reward.
+        """
+        self.goal_position = self.config.GOAL_POSITION
 
     def _update_currpos(self):
         """
@@ -665,7 +682,12 @@ class UR5Env(gym.Env):
         images = None
         if self.camera_mode is not None:
             images = self.get_image()
-
+            
+        if self.pose_est:
+            self._update_box_pos_estimate()
+        else:
+            self.box_position = np.array([0.5, 0.5, 0.5])
+        
         self._update_currpos()
         state_observation = {
             "tcp_pose": self.curr_pos,

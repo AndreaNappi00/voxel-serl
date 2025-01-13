@@ -7,7 +7,7 @@ from pynput import keyboard
 from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
 from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
 
-from robotiq_env.envs.relative_env import RelativeFrame
+from ur_env.envs.relative_env import RelativeFrame
 
 exit_program = threading.Event()
 

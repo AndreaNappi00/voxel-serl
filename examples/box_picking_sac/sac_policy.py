@@ -67,21 +67,13 @@ flags.DEFINE_boolean("learner", False, "Is this a learner or a trainer.")
 flags.DEFINE_boolean("actor", False, "Is this a learner or a trainer.")
 flags.DEFINE_string("ip", "localhost", "IP address of the learner.")
 flags.DEFINE_integer("checkpoint_period", 10000, "Period to save checkpoints.")
-<<<<<<< HEAD:examples/robotiq_sac/sac_policy_robotiq.py
-flags.DEFINE_string("checkpoint_path", '/home/andrea/Code/Thesis/voxel-serl/examples/robotiq_sac/checkpoints',
-=======
-flags.DEFINE_string("checkpoint_path", '/home/nico/real-world-rl/serl/examples/box_picking_sac/checkpoints',
->>>>>>> upstream/develop:examples/box_picking_sac/sac_policy.py
+flags.DEFINE_string("checkpoint_path", '/home/andrea/Code/voxel-serl/examples/robotiq_sac/checkpoints',
                     "Path to save checkpoints.")
 
 flags.DEFINE_integer("eval_checkpoint_step", 0, "evaluate the policy from ckpt at this step")
 flags.DEFINE_string("eval_checkpoint_path", None, "evaluate the policy from ckpt from this path")
 
-<<<<<<< HEAD:examples/robotiq_sac/sac_policy_robotiq.py
-flags.DEFINE_string("log_rlds_path", '/home/andrea/Code/Thesis/voxel-serl/examples/robotiq_sac/rlds',
-=======
-flags.DEFINE_string("log_rlds_path", '/home/nico/real-world-rl/serl/examples/box_picking_sac/rlds',
->>>>>>> upstream/develop:examples/box_picking_sac/sac_policy.py
+flags.DEFINE_string("log_rlds_path", '/home/andrea/Code/voxel-serl/examples/robotiq_sac/rlds',
                     "Path to save RLDS logs.")
 flags.DEFINE_string("preload_rlds_path", None, "Path to preload RLDS data.")
 

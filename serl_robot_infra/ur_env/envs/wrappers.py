@@ -8,7 +8,7 @@ from scipy.spatial.transform import Rotation as R
 
 from ur_env.utils.rotations import quat_2_euler, quat_2_mrp
 
-from robotiq_env.utils.vacuum_gripper import VacuumGripper
+from ur_env.utils.vacuum_gripper import VacuumGripper
 
 
 ROT90 = np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]])
@@ -48,7 +48,7 @@ class KinestheticTeaching(gym.ActionWrapper):
         - expert_a: output adapted to force space (action)
         """
 
-        # position = super().get_wrapper_attr("curr_pos")  # get position from robotiq_env
+        # position = super().get_wrapper_attr("curr_pos")  # get position from ur_env
         position = self.unwrapped.curr_pos
         z_angle = np.arctan2(position[1], position[0])  # get first joint angle
 
@@ -69,7 +69,7 @@ class KinestheticTeaching(gym.ActionWrapper):
         - expert_a: output adapted to force space (action)
         """
 
-        # position = super().get_wrapper_attr("curr_pos")  # get position from robotiq_env
+        # position = super().get_wrapper_attr("curr_pos")  # get position from ur_env
         position = self.unwrapped.curr_pos
         z_angle = np.arctan2(position[1], position[0])  # get first joint angle
 
@@ -170,7 +170,7 @@ class DemonstrationWrapper(gym.ActionWrapper):
         - expert_a: output adapted to force space (action)
         """
 
-        # position = super().get_wrapper_attr("curr_pos")  # get position from robotiq_env
+        # position = super().get_wrapper_attr("curr_pos")  # get position from ur_env
         position = self.unwrapped.curr_pos
         z_angle = np.arctan2(position[1], position[0])  # get first joint angle
 
@@ -191,7 +191,7 @@ class DemonstrationWrapper(gym.ActionWrapper):
         - expert_a: output adapted to force space (action)
         """
 
-        # position = super().get_wrapper_attr("curr_pos")  # get position from robotiq_env
+        # position = super().get_wrapper_attr("curr_pos")  # get position from ur_env
         position = self.unwrapped.curr_pos
         z_angle = np.arctan2(position[1], position[0])  # get first joint angle
 

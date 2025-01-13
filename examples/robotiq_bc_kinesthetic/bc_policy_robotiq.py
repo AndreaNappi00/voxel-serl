@@ -27,10 +27,10 @@ from serl_launcher.data.data_store import (
 )
 from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
 from serl_launcher.networks.reward_classifier import load_classifier_func
-from robotiq_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
-from robotiq_env.envs.relative_env import RelativeFrame
+from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
+from ur_env.envs.relative_env import RelativeFrame
 
-import robotiq_env
+import ur_env
 
 FLAGS = flags.FLAGS
 

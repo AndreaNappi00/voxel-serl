@@ -4,10 +4,10 @@ import pickle as pkl
 import gymnasium as gym
 from pynput import keyboard
 
-from robotiq_env.envs.wrappers import KinestheticTeaching, Quat2MrpWrapper, SpacemouseIntervention
+from ur_env.envs.wrappers import KinestheticTeaching, Quat2MrpWrapper, SpacemouseIntervention
 from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
 
-from robotiq_env.envs.relative_env import RelativeFrame
+from ur_env.envs.relative_env import RelativeFrame
 
 exit_program = threading.Event()
 

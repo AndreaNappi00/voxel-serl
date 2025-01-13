@@ -7,6 +7,7 @@ import pickle as pkl
 import numpy as np
 from copy import deepcopy
 import time
+from datetime import datetime
 
 import gymnasium as gym
 from gymnasium.wrappers import RecordEpisodeStatistics
@@ -29,12 +30,14 @@ from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
 from serl_launcher.networks.reward_classifier import load_classifier_func
 from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
 from ur_env.envs.relative_env import RelativeFrame
+from serl_launcher.utils.sampling_utils import TemporalActionEnsemble
+
 
 import ur_env
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string("env", "robotiq_basic_env", "Name of environment.")
+flags.DEFINE_string("env", "box_picking_basic_env", "Name of environment.")
 flags.DEFINE_string("agent", "bc_noimg", "Name of agent.")
 flags.DEFINE_string("exp_name", None, "Name of the experiment for wandb logging.")
 flags.DEFINE_integer("max_traj_length", 100, "Maximum length of trajectory.")
@@ -42,12 +45,12 @@ flags.DEFINE_integer("seed", 42, "Random seed.")
 flags.DEFINE_bool("save_model", True, "Whether to save model.")
 flags.DEFINE_integer("batch_size", 256, "Batch size.")
 
-flags.DEFINE_integer("max_steps", 20000, "Maximum number of training steps.")
-flags.DEFINE_integer("replay_buffer_capacity", 20000, "Replay buffer capacity.")
+flags.DEFINE_integer("max_steps", 100000, "Maximum number of training steps.")
+flags.DEFINE_integer("replay_buffer_capacity", 100000, "Replay buffer capacity.")
 
 flags.DEFINE_multi_string("demo_paths", None, "paths to demos")
-flags.DEFINE_string("checkpoint_path", "/home/andrea/Code/Thesis/voxel-serl/examples/robotiq_bc/checkpoints", "Path to save checkpoints.")
-flags.DEFINE_integer("checkpoint_period", 2000, "Period to save checkpoints.")
+flags.DEFINE_string("checkpoint_path", None, "Path to save checkpoints.")
+flags.DEFINE_integer("checkpoint_period", 2500, "Period to save checkpoints.")
 
 flags.DEFINE_integer(
     "eval_checkpoint_step", 0, "evaluate the policy from ckpt at this step"
@@ -170,59 +173,77 @@ def main(_):
         )
         agent = agent.replace(state=ckpt)
 
+        wandb_logger = make_wandb_logger(
+            project="paper_evaluation_unseen",
+            description=FLAGS.exp_name or FLAGS.env,
+            debug=False,
+        )
+        action_ensemble = TemporalActionEnsemble(activated=False)
         success_counter = 0
-        time_list = []
 
-        try:
-            for episode in range(FLAGS.eval_n_trajs):
-                obs, _ = env.reset()
-                done = False
-                is_failure = False
-                is_success = False
-                start_time = time.time()
-                while not done:
-                    actions = agent.sample_actions(
-                        observations=jax.device_put(obs),
-                        argmax=True,
-                        # seed=rng,
-                    )
-                    actions = np.asarray(jax.device_get(actions))
-                    print(f"sampled actions: {actions}")
+        trajectories = []
+        traj_infos = []
+        for episode in range(FLAGS.eval_n_trajs):
+            trajectory = []
+            obs, _ = env.reset()
+            done = False
+            action_ensemble.reset()
 
-                    next_obs, reward, done, truncated, info = env.step(actions)
-                    obs = next_obs
+            if len(trajectories) == 0:
+                input("ready? record robot view as well!")
 
-                    if is_failure:
-                        done = True
-                        print("terminated by user")
+            start_time = time.time()
 
-                    if is_success:
-                        reward = 1
-                        done = True
-                        print("success, reset now")
+            while not done:
+                actions = agent.sample_actions(
+                    observations=jax.device_put(obs),
+                    argmax=True,
+                    # seed=rng,
+                )
+                # actions = actions.at[-1].set(actions[-1] * 2) # always activate suction
+                actions = np.asarray(actions)
 
-                    if truncated:
-                        reward = 0
-                        done = True
-                        print("truncated, reset now")
+                ensembled_action = action_ensemble.sample(actions)  # will return actions if not activated
+                next_obs, reward, done, truncated, info = env.step(ensembled_action)
+                transition = dict(
+                    observations=obs.copy(),  # do not save voxel grid or images
+                    actions=ensembled_action,
+                    next_observations=next_obs.copy(),
+                    rewards=reward,
+                    masks=1.0 - done,
+                    dones=done,
+                )
+                trajectory.append(transition)
+                obs = next_obs
 
-                    if done:
-                        if not is_failure:
-                            dt = time.time() - start_time
-                            time_list.append(dt)
-                            print(dt)
+                if done or truncated:
+                    success_counter += (reward > 50.)
+                    dt = time.time() - start_time
+                    running_reward = np.sum(np.asarray([t["rewards"] for t in trajectory]))
+                    running_reward = max(running_reward, -100.)
 
-                        success_counter += reward
-                        print(reward)
-                        print(f"{success_counter}/{episode + 1}")
+                    print(f"{success_counter}/{episode + 1} ", end=' ')
+                    print(f"time: {dt:.3f}s  running_rew: {running_reward:.2f}")
 
-                wandb_logger.log(info, step=episode)
+                    trajectories.append({"traj": trajectory, "time": dt, "success": (reward > 50.)})
+                    infos = {
+                        "running_reward": running_reward,
+                        "time": dt,
+                        "success_rate": float(reward > 50.),
+                        "action_cost": np.linalg.norm(np.asarray([t["actions"] for t in trajectory]), axis=1, ord=2).mean()
+                    }
+                    traj_infos.append(infos)
+                    wandb_logger.log(infos, step=episode)
 
-        except KeyboardInterrupt:
-            print("interrupted by user, exiting...")
+        traj_infos = {k: [d[k] for d in traj_infos] for k in traj_infos[0]}  # list of dicts to dict of lists
+        mean_infos = {"mean_" + key: np.mean(val) for key, val in traj_infos.items()}
+        wandb_logger.log(mean_infos)
+        for key, value in mean_infos.items():
+            print(f"{key}: {value:.3f}")
 
-        print(f"success rate: {success_counter / FLAGS.eval_n_trajs}")
-        print(f"average time: {np.mean(time_list)}")
+        with open(f"trajectories {datetime.now().strftime('%m-%d %H%M')}.pkl", "wb") as f:
+            import pickle
+            pickle.dump(trajectories, f)
 
     env.close()
 

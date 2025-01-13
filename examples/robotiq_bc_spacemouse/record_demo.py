@@ -9,11 +9,7 @@ import gymnasium as gym
 from pprint import pprint
 from pynput import keyboard
 
-<<<<<<<< HEAD:examples/robotiq_bc_spacemouse/record_demo.py
-from robotiq_env.envs.wrappers import KinestheticTeaching, SpacemouseIntervention, Quat2MrpWrapper
-========
-from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
->>>>>>>> upstream/develop:examples/box_picking_bc/record_demo.py
+from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper, KinestheticTeaching
 from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
 from serl_launcher.wrappers.chunking import ChunkingWrapper
 

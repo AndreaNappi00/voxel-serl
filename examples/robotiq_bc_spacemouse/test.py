@@ -1,5 +1,5 @@
 import rtde_control, rtde_receive
-from robotiq_env.utils.vacuum_gripper import VacuumGripper
+from ur_env.utils.vacuum_gripper import VacuumGripper
 import time
 import asyncio
 

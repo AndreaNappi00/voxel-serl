@@ -1,4 +1,4 @@
-from robotiq_env.envs.basic_env.config import RobotiqCornerConfig
+from ur_env.envs.basic_env.config import RobotiqCornerConfig
 from rtde_control import RTDEControlInterface
 from rtde_receive import RTDEReceiveInterface
 import numpy as np

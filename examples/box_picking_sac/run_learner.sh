@@ -11,12 +11,6 @@ python sac_policy.py "$@" \
     --batch_size 2048 \
     --max_steps 50000 \
     --reward_scale 1 \
-<<<<<<< HEAD:examples/robotiq_sac/run_learner.sh
-    --demo_paths "/home/andrea/Code/Thesis/voxel-serl/examples/robotiq_sac/robotiq_test_20_demos_2024-10-21_09-52-53.pkl" \
-    # --debug
-#    --preload_rlds_path "/home/nico/real-world-rl/serl/examples/robotiq_sac/rlds" \
-=======
-    --demo_paths "/home/nico/real-world-rl/serl/examples/box_picking_sac/robotiq_test_20_demos_apr11_random_boxes.pkl" \
-#    --preload_rlds_path "/home/nico/real-world-rl/serl/examples/box_picking_sac/rlds" \
+    --demo_paths "/home/andrea/Code/voxel-serl/examples/box_picking_sac/robotiq_test_20_demos_apr11_random_boxes.pkl" \
+#    --preload_rlds_path "/home/amdrea/Code/voxel-serl/examples/box_picking_sac/rlds" \
 #    --debug
->>>>>>> upstream/develop:examples/box_picking_sac/run_learner.sh
