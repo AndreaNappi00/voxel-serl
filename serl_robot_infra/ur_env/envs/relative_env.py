@@ -7,6 +7,8 @@ from franka_env.utils.transformations import (
     construct_rotation_matrix
 )
 
+from ur_env.envs.placing_env.config import UR5PlacingCornerConfig
+
 
 class RelativeFrame(gym.Wrapper):
     """
@@ -31,6 +33,7 @@ class RelativeFrame(gym.Wrapper):
 
     def __init__(self, env: Env, include_relative_pose=True):
         super().__init__(env)
+        self.config = UR5PlacingCornerConfig
         self.rotation_matrix = np.eye((3))
         self.rotation_matrix_reset = np.eye((3))
 
@@ -82,6 +85,9 @@ class RelativeFrame(gym.Wrapper):
         obs["state"]["tcp_vel"][3:6] = self.rotation_matrix_reset.transpose() @ obs["state"]["tcp_vel"][3:6]
         obs["state"]["tcp_force"] = self.rotation_matrix.transpose() @ obs["state"]["tcp_force"]
         obs["state"]["tcp_torque"] = self.rotation_matrix.transpose() @ obs["state"]["tcp_torque"]
+        if self.config.POSE_ESTIMATION:
+            obs["state"]["boxes"][:3] = self.rotation_matrix_reset.transpose() @ obs["state"]["boxes"][:3]
+            obs["state"]["boxes"][3:6] = self.rotation_matrix_reset.transpose() @ obs["state"]["boxes"][3:6]
 
         if self.include_relative_pose:
             T_b_o = construct_homogeneous_matrix(obs["state"]["tcp_pose"])

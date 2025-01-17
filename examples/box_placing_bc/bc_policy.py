@@ -26,7 +26,7 @@ from serl_launcher.data.data_store import (
     populate_data_store,
     populate_data_store_with_z_axis_only,
 )
-from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages
+from serl_launcher.wrappers.serl_obs_wrappers import SerlObsWrapperNoImages, SerlObsWrapperTrajBox
 from serl_launcher.networks.reward_classifier import load_classifier_func
 from ur_env.envs.wrappers import SpacemouseIntervention, Quat2MrpWrapper
 from ur_env.envs.relative_env import RelativeFrame
@@ -37,7 +37,7 @@ import ur_env
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string("env", "box_picking_basic_env", "Name of environment.")
+flags.DEFINE_string("env", "box_placing_basic_env", "Name of environment.")
 flags.DEFINE_string("agent", "bc_noimg", "Name of agent.")
 flags.DEFINE_string("exp_name", None, "Name of the experiment for wandb logging.")
 flags.DEFINE_integer("max_traj_length", 100, "Maximum length of trajectory.")
@@ -80,12 +80,12 @@ def main(_):
         FLAGS.env,
         fake_env=not FLAGS.eval_checkpoint_step,
         camera_mode="none",
-        max_episode_length=100,
+        max_episode_length=150,
     )
     # env = SpacemouseIntervention(env)
     env = RelativeFrame(env)
     env = Quat2MrpWrapper(env)
-    env = SerlObsWrapperNoImages(env)
+    env = SerlObsWrapperTrajBox(env)
     # env = ChunkingWrapper(env, obs_horizon=1, act_exec_horizon=None)
     env = RecordEpisodeStatistics(env)
 
@@ -116,8 +116,8 @@ def main(_):
             # preload_rlds_path=FLAGS.preload_rlds_path,
         )
 
-        print(f"loaded demos from {FLAGS.demo_paths}")
         replay_buffer = populate_data_store(replay_buffer, FLAGS.demo_paths)
+        print(f"loaded demos from {FLAGS.demo_paths}")
 
         replay_iterator = replay_buffer.get_iterator(
             sample_args={
@@ -183,57 +183,62 @@ def main(_):
 
         trajectories = []
         traj_infos = []
-        for episode in range(FLAGS.eval_n_trajs):
-            trajectory = []
-            obs, _ = env.reset()
-            done = False
-            action_ensemble.reset()
+        try:
+            for episode in range(FLAGS.eval_n_trajs):
+                trajectory = []
+                obs, _ = env.reset()
+                done = False
+                action_ensemble.reset()
 
-            if len(trajectories) == 0:
-                input("ready? record robot view as well!")
+                if len(trajectories) == 0:
+                    input("ready? record robot view as well!")
 
-            start_time = time.time()
+                start_time = time.time()
 
-            while not done:
-                actions = agent.sample_actions(
-                    observations=jax.device_put(obs),
-                    argmax=True,
-                    # seed=rng,
-                )
-                # actions = actions.at[-1].set(actions[-1] * 2) # always activate suction
-                actions = np.asarray(actions)
+                while not done:
+                    actions = agent.sample_actions(
+                        observations=jax.device_put(obs),
+                        argmax=True,
+                        # seed=rng,
+                    )
+                    # actions = actions.at[-1].set(actions[-1] * 2) # always activate suction
+                    actions = np.asarray(actions)
 
-                ensembled_action = action_ensemble.sample(actions)  # will return actions if not activated
-                next_obs, reward, done, truncated, info = env.step(ensembled_action)
-                transition = dict(
-                    observations=obs.copy(),  # do not save voxel grid or images
-                    actions=ensembled_action,
-                    next_observations=next_obs.copy(),
-                    rewards=reward,
-                    masks=1.0 - done,
-                    dones=done,
-                )
-                trajectory.append(transition)
-                obs = next_obs
+                    ensembled_action = action_ensemble.sample(actions)  # will return actions if not activated
+                    next_obs, reward, done, truncated, info = env.step(ensembled_action)
+                    transition = dict(
+                        observations=obs.copy(),  # do not save voxel grid or images
+                        actions=ensembled_action,
+                        next_observations=next_obs.copy(),
+                        rewards=reward,
+                        masks=1.0 - done,
+                        dones=done,
+                    )
+                    trajectory.append(transition)
+                    obs = next_obs
 
-                if done or truncated:
-                    success_counter += (reward > 50.)
-                    dt = time.time() - start_time
-                    running_reward = np.sum(np.asarray([t["rewards"] for t in trajectory]))
-                    running_reward = max(running_reward, -100.)
+                    if done or truncated:
+                        print("Success! Reward: ", reward)
+                        success_counter += (reward > 50.)
+                        dt = time.time() - start_time
+                        running_reward = np.sum(np.asarray([t["rewards"] for t in trajectory]))
+                        running_reward = max(running_reward, -100.)
 
-                    print(f"{success_counter}/{episode + 1} ", end=' ')
-                    print(f"time: {dt:.3f}s  running_rew: {running_reward:.2f}")
+                        print(f"{success_counter}/{episode + 1} ", end=' ')
+                        print(f"time: {dt:.3f}s  running_rew: {running_reward:.2f}")
 
-                    trajectories.append({"traj": trajectory, "time": dt, "success": (reward > 50.)})
-                    infos = {
-                        "running_reward": running_reward,
-                        "time": dt,
-                        "success_rate": float(reward > 50.),
-                        "action_cost": np.linalg.norm(np.asarray([t["actions"] for t in trajectory]), axis=1, ord=2).mean()
-                    }
-                    traj_infos.append(infos)
-                    wandb_logger.log(infos, step=episode)
+                        trajectories.append({"traj": trajectory, "time": dt, "success": (reward > 50.)})
+                        infos = {
+                            "running_reward": running_reward,
+                            "time": dt,
+                            "success_rate": float(reward > 50.),
+                            "action_cost": np.linalg.norm(np.asarray([t["actions"] for t in trajectory]), axis=1, ord=2).mean()
+                        }
+                        traj_infos.append(infos)
+                        wandb_logger.log(infos, step=episode)
+                        
+        except KeyboardInterrupt as e:
+            print(f'\nProgram was interrupted, cleaning up...  ', e.__str__())  
 
         traj_infos = {k: [d[k] for d in traj_infos] for k in traj_infos[0]}  # list of dicts to dict of lists
         mean_infos = {"mean_" + key: np.mean(val) for key, val in traj_infos.items()}

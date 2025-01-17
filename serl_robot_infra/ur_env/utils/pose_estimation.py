@@ -5,7 +5,7 @@ import msgpack
 import matplotlib.pyplot as plt
 import numpy as np
 
-async def read_vision_from_server():
+async def read_vision_from_server_main():
     """
     Function used to read the data from the server containing the pose of the boxes in the scene. The unit measure of the output is in meters.
 
@@ -13,7 +13,7 @@ async def read_vision_from_server():
     - space-boxes-box-world2box: pose from the camera frame to the center of the box (exponential coordinates for the orientation)
     """
     messages = []
-    async with connect("ws://192.168.1.184:7777") as websocket:
+    async with connect("ws://localhost:7777") as websocket:
         while True:
             message = msgpack.unpackb(await websocket.recv())
             # box_position = message['space'][0]['boxes'][list(message['space'][0]['boxes'].keys())[0]]['world2box']['pos']
@@ -89,6 +89,7 @@ class BoxPoseEstimation:
         # Start the async loop in a separate thread
         self.thread = threading.Thread(target=self._run_async_loop)
         self.thread.daemon = True
+        print("Starting thread")
         self.thread.start()
     
     def _run_async_loop(self):
@@ -104,10 +105,11 @@ class BoxPoseEstimation:
         """
         Async function to read data from the server containing box pose
         """
-        while not self.stop_event.is_set():
-            try:
-                async with connect(self.ip_address) as websocket:
+        try:
+            async with connect(self.ip_address) as websocket:
+                while not self.stop_event.is_set():
                     message = msgpack.unpackb(await websocket.recv())
+                    await websocket.send("a")
                     
                     # Safely update the message with a lock
                     with self.state_lock:
@@ -116,13 +118,12 @@ class BoxPoseEstimation:
                         ]['world2box']['pos']
                         self.orient = message['space'][0]['boxes'][
                             list(message['space'][0]['boxes'].keys())[0]
-                        ]['world2box']['orient']
+                        ]['world2box']['rot']
                     
-                    await websocket.send("a")
                     
-            except Exception as e:
-                print(f"Error reading from vision server: {e}")
-                await asyncio.sleep(1)  # Prevent tight error loop
+        except Exception as e:
+            print(f"Error reading from vision server: {e}")
+            await asyncio.sleep(1)  # Prevent tight error loop
     
     def get_box_position(self):
         """
@@ -142,8 +143,9 @@ class BoxPoseEstimation:
         """
         Method to gracefully stop the async loop
         """
+        print("end")
         self.stop_event.set()
         self.thread.join()
 
 if __name__ == "__main__":
-    messages = asyncio.run(read_vision_from_server())
+    messages = asyncio.run(read_vision_from_server_main())

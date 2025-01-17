@@ -6,6 +6,6 @@ python bc_policy.py "$@" \
     --exp_name=bc_drq_policy \
     --seed 67 \
     --batch_size 256 \
-    --eval_checkpoint_step 2500 \
+    --eval_checkpoint_step 30000 \
     --checkpoint_path "/home/andrea/Code/voxel-serl/examples/box_placing_bc/checkpoints" \
     --debug # wandb is disabled when debug

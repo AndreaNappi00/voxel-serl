@@ -41,6 +41,24 @@ class SerlObsWrapperNoImages(gym.ObservationWrapper):
         obs = flatten(self.env.observation_space["state"], obs["state"])
         return obs
 
+class SerlObsWrapperTrajBox(gym.ObservationWrapper):
+    """
+    This observation wrapper treats the observation space as a flattened
+    space, if no images are present.
+    """
+
+    def __init__(self, env):
+        super().__init__(env)
+        # Create a flattened space that includes all observation components
+        
+        self.observation_space = flatten_space(self.env.observation_space["state"])
+
+    def observation(self, obs):
+        # Flatten state component
+        obs = flatten(self.env.observation_space["state"], obs["state"])
+        
+        return obs
+
 
 class ScaleObservationWrapper(gym.ObservationWrapper):
     """

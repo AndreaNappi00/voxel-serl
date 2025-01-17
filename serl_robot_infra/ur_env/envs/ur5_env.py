@@ -137,6 +137,7 @@ class UR5Env(gym.Env):
         
         self.pose_estimation_ip = config.POSE_ESTIMATION_IP
         self.pose_est = config.POSE_ESTIMATION
+        self.WF_rot = config.WF_rot
         
         # boxes
         self.box_pose = BoxPoseEstimation(self.pose_estimation_ip) if config.POSE_ESTIMATION else None
@@ -676,7 +677,7 @@ class UR5Env(gym.Env):
     def _is_truncated(self):
         return self.controller.is_truncated()
 
-    def _get_obs(self, action) -> dict:
+    def _get_obs(self, action) -> dict:     ## Overwritten by box_placing_env.py
         # get image before state observation, so they match better in time
 
         images = None

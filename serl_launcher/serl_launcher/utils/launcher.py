@@ -15,6 +15,7 @@ from serl_launcher.agents.continuous.sac import SACAgent
 from serl_launcher.agents.continuous.drq import DrQAgent
 from serl_launcher.agents.continuous.vice import VICEAgent
 from serl_launcher.agents.continuous.bc_noimg import BCAgentNoImg
+from serl_launcher.agents.continuous.bc_traj_box import BCAgentTrajBox
 
 from serl_launcher.data.data_store import (
     MemoryEfficientReplayBufferDataStore,
@@ -50,6 +51,28 @@ def make_bc_agent(
 
 
 def make_bc_agent_no_img(
+        seed, sample_obs, sample_action
+):
+    return BCAgentNoImg.create(
+        jax.random.PRNGKey(seed),
+        sample_obs,
+        sample_action,
+        network_kwargs={
+            "activations": nn.tanh,
+            "use_layer_norm": False,
+            "hidden_dims": [256, 256],
+            # "hidden_dims": [128, 64],
+        },
+        policy_kwargs={
+            "tanh_squash_distribution": False,
+            "std_parameterization": "exp",
+            "std_min": 1e-5,
+            "std_max": 5,
+        },
+    )
+    
+    
+def make_bc_agent_traj_box(
         seed, sample_obs, sample_action
 ):
     return BCAgentNoImg.create(
@@ -264,9 +287,6 @@ def make_replay_buffer(
     - image_keys: list of image keys, used only "memory_efficient_replay_buffer"
     - preload_rlds_path: path to preloaded RLDS trajectories
     """
-    print("shape of observation space and action space")
-    print(env.observation_space)
-    print(env.action_space)
 
     # init logger for RLDS
     if rlds_logger_path:
