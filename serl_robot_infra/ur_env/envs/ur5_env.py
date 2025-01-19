@@ -707,4 +707,6 @@ class UR5Env(gym.Env):
     def close(self):
         if self.controller:
             self.controller.stop()
+        if self.pose_est:
+            self.box_pose.stop()
         super().close()

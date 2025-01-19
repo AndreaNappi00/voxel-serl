@@ -138,8 +138,8 @@ class BoxPlacingCornerEnv(UR5Env):
         gripper_goal = 0.1 < state['gripper_state'][0] < 0.85
         orientation_goal = sum(obs["state"]["tcp_pose"][3:] * self.curr_reset_pose[3:]) ** 2 > 0.85
         box_positon_goal = np.linalg.norm(obs["state"]["boxes"][:3] - goal[:3]) < 0.05
-        print("box pos: ", obs["state"]["boxes"][:3], "reached?: ", box_positon_goal, "error?: ", np.linalg.norm(obs["state"]["boxes"][:3] - goal[:3]))
-        print("force: ", obs["state"]["tcp_force"], "reached?: ", force_goal)
+        # print("box pos: ", obs["state"]["boxes"][:3], "reached?: ", box_positon_goal, "error?: ", np.linalg.norm(obs["state"]["boxes"][:3] - goal[:3]))
+        # print("force: ", obs["state"]["tcp_force"], "reached?: ", force_goal)
         box_orientation_goal = sum(obs["state"]["boxes"][3:] * np.array([0, 0, 1])) ** 2 > 0.9
 
         # print(f"Force goal: {force_goal}, Height goal: {height_goal}, Gripper goal: {gripper_goal}")
